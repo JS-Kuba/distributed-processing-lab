@@ -16,6 +16,12 @@ int main() {
 
         switch (command) {
             case 1: {
+                
+                if (ld->head != NULL) {
+                    free_list(ld);
+                }
+                ld->head = NULL;
+
                 printf("\nSelect data type:\n1 - int,\n2 - string,\n3 - structure with int and char,\n4 - exit\n");
                 scanf("%d", &data_type);
                 switch (data_type) {
@@ -42,11 +48,7 @@ int main() {
                         break;
                 }
 
-                if (ld->head != NULL) {
-                    free_list(ld->head);
-                }
-
-                ld->head = NULL;
+           
                 printf("Linked list created\n");
                 break;
             }
