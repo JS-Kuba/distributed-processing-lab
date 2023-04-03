@@ -8,7 +8,7 @@ Debug/
 # Compiled Object files
 *.slo
 *.lo
-*.o
+# *.o
 *.obj
 
 # Precompiled Headers
@@ -16,7 +16,7 @@ Debug/
 *.pch
 
 # Compiled Dynamic libraries
-*.so
+# *.so
 *.dylib
 *.dll
 
@@ -27,10 +27,10 @@ Debug/
 # Compiled Static libraries
 *.lai
 *.la
-*.a
+# *.a
 *.lib
 
 # Executables
 *.exe
-*.out
+# *.out
 *.app
