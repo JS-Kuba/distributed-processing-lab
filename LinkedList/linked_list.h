@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <semaphore.h>
+
 
 typedef int (*compare_func)(void*, void*);
 typedef void (*print_func)(void*);
@@ -22,10 +24,11 @@ typedef struct ListDesc {
     void* head;
     compare_func comparator;
     print_func print;
+    sem_t semaphore;
 } ListDesc;
 
 
-
+int create_list(ListDesc* ld, compare_func comparator, print_func printer);
 
 void insert(ListDesc* ld, void* new_data, size_t data_size);
 

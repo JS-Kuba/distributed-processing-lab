@@ -1,0 +1,6 @@
+gcc -c linked_list.c -o linked_list.o
+ar r lib_linked_list.a linked_list.o
+
+gcc -c threads.c -o threads.o
+gcc threads.o lib_linked_list.a -o threads.out
+./threads.out

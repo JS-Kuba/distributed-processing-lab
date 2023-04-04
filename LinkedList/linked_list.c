@@ -1,7 +1,20 @@
 #include"linked_list.h"
 
+int create_list(ListDesc* ld, compare_func comparator, print_func printer) {
+    ld->head = NULL;
+    ld->comparator = comparator;
+    ld->print = printer;
+
+    if (sem_init(&ld->semaphore, 0, 1) != 0) {
+        perror("semaphore init failed!");
+        return 1;
+    }
+    return 0;
+}
 
 void insert(ListDesc* ld, void* new_data, size_t data_size) {
+    sem_wait(&ld->semaphore);
+    
     struct Node* new_node = (struct Node*)malloc(sizeof(struct Node));
 
     void* data_copy = malloc(data_size);
@@ -26,9 +39,11 @@ void insert(ListDesc* ld, void* new_data, size_t data_size) {
         prev->next = new_node;
         new_node->next = current;
     }
+    sem_post(&ld->semaphore);
 }
 
 int list_length(ListDesc* ld) {
+
     int length = 0;
     struct Node* current = ld->head;
 
@@ -41,6 +56,9 @@ int list_length(ListDesc* ld) {
 }
 
 int delete_node(ListDesc* ld, int position) {
+
+    sem_wait(&ld->semaphore);
+
     if (ld->head == NULL || position < 0 || position >= list_length(ld)) {
         return 0;
     }
@@ -68,6 +86,9 @@ int delete_node(ListDesc* ld, int position) {
 
     free(current->data);
     free(current);
+    
+    sem_post(&ld->semaphore);
+
     return 1;
 }
 
@@ -103,7 +124,7 @@ void print_string(void* data) {
 
 void print_struct(void* data) {
     struct CustomStruct* s = (struct CustomStruct*)data;
-    printf("Number: %d, Letter: %c\n", s->number, s->letter);
+    printf("Number: %d, Thread: %c\n", s->number, s->letter);
 }
 
 void print_list(ListDesc* ld) {
