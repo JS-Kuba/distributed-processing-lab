@@ -32,9 +32,9 @@ int main(int argc, char *argv[]) {
         wait(NULL);
         printf("parent pid = %d\n", getpid());
         // Linux
-        // system("pstree -p");
+        system("pstree -p");
         // MacOS
-        system("pstree -w $PPID");
+        // system("pstree -w $PPID");
 
     }
 
