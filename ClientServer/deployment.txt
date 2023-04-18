@@ -1,0 +1,11 @@
+#1 Create the network
+docker network create my_net
+
+#2 Build and run the server in /server directory
+docker build -t c_server .
+docker run --network my_net -p 12345:12345 --name server_instance c_server
+
+#3 Build and run two clients in /client directory
+docker build -t py_client .
+winpty docker run -it --name client_instance --network my_net py_client
+winpty docker run -it --name client_instance2 --network my_net py_client

@@ -1,0 +1,11 @@
+Mutex usage in the server code:
+
+1. pthread_mutex_t clients_mutex: This is a mutex variable that is used to synchronize access to the clients array. It is initialized using pthread_mutex_init() before the server enters the main loop.
+
+2. pthread_mutex_lock(&clients_mutex): This call locks the mutex before accessing the clients array. It ensures that only one thread can hold the mutex at a time, preventing concurrent access to the clients array by multiple threads.
+
+3. clients[client_count++] = client_socket;: This statement adds a client socket to the clients array. Since it is protected by the mutex, it ensures that multiple threads do not modify the clients array simultaneously, avoiding potential race conditions.
+
+4. pthread_mutex_unlock(&clients_mutex): This call unlocks the mutex after accessing the clients array, allowing other threads to acquire the mutex and access the array.
+
+The use of mutexes in this code ensures that concurrent threads do not interfere with each other when accessing the shared clients array, preventing data corruption and ensuring thread-safe access to shared resources.

@@ -1,0 +1,13 @@
+Here's how thread creation works in the given server code:
+
+1. When a new client connects, the server accepts the connection and obtains a new socket, client_socket, to communicate with that client.
+
+2. The server creates a new thread using the pthread_create() function, which takes four arguments: a pointer to a pthread_t variable to hold the thread identifier, a pointer to a NULL thread attribute (indicating default attributes), a pointer to the thread function (handle_client) that will be executed in the new thread, and a pointer to the client_socket as the argument to be passed to the thread function.
+
+3. The handle_client function is the entry point for the newly created thread. It is responsible for handling communication with the client, including receiving and sending messages.
+
+4. Each thread operates independently and concurrently, handling the communication with its respective client. The server can handle multiple clients simultaneously by creating a new thread for each client that connects, allowing for concurrent processing of client requests.
+
+5. When a client disconnects or encounters an error, the thread associated with that client terminates by returning from the handle_client function, and the thread resources are cleaned up using pthread_exit().
+
+Overall, the use of threads allows the server to handle multiple clients concurrently and provides efficient handling of client connections in a multi-client environment.
