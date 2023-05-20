@@ -3,7 +3,7 @@ import threading
 # import argparse
 
 # Server configuration
-HOST = '172.19.0.2'
+HOST = '0.0.0.0'
 PORT = 12345
 BUFFER_SIZE = 1024    # Buffer size for receiving messages
 

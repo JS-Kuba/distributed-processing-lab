@@ -6,17 +6,27 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+// working with pipes
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define HOST "0.0.0.0"
 #define PORT 12345
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 1024
 
-int clients[MAX_CLIENTS];
+typedef struct {
+    int socket_fd;
+    int pipe_fd[2]; // Change to an array of two file descriptors
+} Client;
+
+Client clients[MAX_CLIENTS];
+
 int client_count = 0;
 pthread_mutex_t clients_mutex;
 
-void *handle_client(void *client_socket_ptr);
+void *handle_client(void *client_ptr);
 void broadcast_message(char *message, int sender_socket);
 void remove_client(int client_socket);
 
@@ -71,10 +81,21 @@ int main()
         printf("Connected to %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
         fflush(stdout);
         pthread_mutex_lock(&clients_mutex);
-        clients[client_count++] = client_socket;
+        clients[client_count].socket_fd = client_socket;
+
+        // pipe initialization
+        if (pipe(clients[client_count].pipe_fd) == -1) // Change to use the pipe_fd array
+        {
+            perror("Error creating pipe");
+            close(client_socket);
+            continue;
+        }
+
+        client_count++;
+
         pthread_mutex_unlock(&clients_mutex);
 
-        if (pthread_create(&client_thread, NULL, handle_client, (void *)&client_socket) != 0)
+        if (pthread_create(&client_thread, NULL, handle_client, (void *)&clients[client_count - 1]) != 0)
         {
             perror("Error creating client thread");
             exit(1);
@@ -85,13 +106,30 @@ int main()
     return 0;
 }
 
-void *handle_client(void *client_socket_ptr)
+void *handle_client(void *client_ptr)
 {
-    int client_socket = *((int *)client_socket_ptr);
+    Client *client = (Client *)client_ptr;
+    int client_socket = client->socket_fd;
+    int pipe_read_fd = client->pipe_fd[0]; // Read end of the pipe
     char buffer[BUFFER_SIZE];
     int bytes_received;
 
     while (1)
+    {
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(client_socket, &read_fds);
+        FD_SET(pipe_read_fd, &read_fds);
+
+        int max_fd =(client_socket > pipe_read_fd) ? client_socket : pipe_read_fd;
+    if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) == -1)
+    {
+        perror("Error in select");
+        remove_client(client_socket);
+        break;
+    }
+
+    if (FD_ISSET(client_socket, &read_fds))
     {
         bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
         if (bytes_received <= 0)
@@ -101,13 +139,34 @@ void *handle_client(void *client_socket_ptr)
         }
 
         buffer[bytes_received] = '\0';
-        printf("Received from %d: %s\n", client_socket, buffer);
+        printf("Received from %d (socket): %s\n", client_socket, buffer);
         fflush(stdout);
 
         broadcast_message(buffer, client_socket);
+        printf("Sent through pipe\n");
+        fflush(stdout);
     }
+    else if (FD_ISSET(pipe_read_fd, &read_fds))
+    {
+        bytes_received = read(pipe_read_fd, buffer, BUFFER_SIZE - 1);
+        if (bytes_received <= 0)
+        {
+            perror("Error reading from pipe");
+            remove_client(client_socket);
+            break;
+        }
 
-    return NULL;
+        buffer[bytes_received] = '\0';
+        printf("Received from %d (pipe): %s\n", client_socket, buffer);
+        fflush(stdout);
+
+        send(client_socket, buffer, strlen(buffer), 0);
+        printf("Sent through socket\n");
+        fflush(stdout);
+    }
+}
+
+return NULL;
 }
 
 void broadcast_message(char *message, int sender_socket)
@@ -116,12 +175,12 @@ void broadcast_message(char *message, int sender_socket)
 
     for (int i = 0; i < client_count; i++)
     {
-        if (clients[i] != sender_socket)
+        if (clients[i].socket_fd != sender_socket)
         {
-            if (send(clients[i], message, strlen(message), 0) == -1)
+            if (write(clients[i].pipe_fd[1], message, strlen(message) + 1) == -1) // Write to the write end of the pipe
             {
-                perror("Error sending message");
-                remove_client(clients[i]);
+                perror("Error writing to pipe");
+                remove_client(clients[i].socket_fd);
             }
         }
     }
@@ -134,21 +193,20 @@ void remove_client(int client_socket)
     pthread_mutex_lock(&clients_mutex);
     for (int i = 0; i < client_count; i++)
     {
-        if (clients[i] == client_socket)
+        if (clients[i].socket_fd == client_socket)
         {
             for (int j = i; j < client_count - 1; j++)
-            {
-                clients[j] = clients[j + 1];
-            }
-            client_count--;
-            break;
+        {
+            clients[j] = clients[j + 1];
+        }
+        client_count--;
+        break;
         }
     }
-
     pthread_mutex_unlock(&clients_mutex);
 
-    pthread_mutex_destroy(&clients_mutex);
     close(client_socket);
     printf("Disconnected: %d\n", client_socket);
     fflush(stdout);
 }
+
