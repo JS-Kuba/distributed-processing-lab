@@ -15,10 +15,12 @@
 #define PORT 12345
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 1024
+#define R 0
+#define W 1
 
 typedef struct {
     int socket_fd;
-    int pipe_fd[2]; // Change to an array of two file descriptors
+    int pipe_fd[2];
 } Client;
 
 Client clients[MAX_CLIENTS];
@@ -84,7 +86,7 @@ int main()
         clients[client_count].socket_fd = client_socket;
 
         // pipe initialization
-        if (pipe(clients[client_count].pipe_fd) == -1) // Change to use the pipe_fd array
+        if (pipe(clients[client_count].pipe_fd) == -1)
         {
             perror("Error creating pipe");
             close(client_socket);
@@ -110,7 +112,7 @@ void *handle_client(void *client_ptr)
 {
     Client *client = (Client *)client_ptr;
     int client_socket = client->socket_fd;
-    int pipe_read_fd = client->pipe_fd[0]; // Read end of the pipe
+    int pipe_read_fd = client->pipe_fd[R];
     char buffer[BUFFER_SIZE];
     int bytes_received;
 
@@ -177,7 +179,7 @@ void broadcast_message(char *message, int sender_socket)
     {
         if (clients[i].socket_fd != sender_socket)
         {
-            if (write(clients[i].pipe_fd[1], message, strlen(message) + 1) == -1) // Write to the write end of the pipe
+            if (write(clients[i].pipe_fd[W], message, strlen(message) + 1) == -1)
             {
                 perror("Error writing to pipe");
                 remove_client(clients[i].socket_fd);
