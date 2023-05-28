@@ -3,7 +3,7 @@ import threading
 # import argparse
 
 # Server configuration
-HOST = '0.0.0.0'
+HOST = '127.0.0.1'
 PORT = 12345
 BUFFER_SIZE = 1024    # Buffer size for receiving messages
 
@@ -43,6 +43,7 @@ def start_client():
             # Send message to server
             message = input()
             print(f"Send message: {message}\n")
+            message += '\n'
             client_socket.sendall(message.encode('utf-8'))
         except KeyboardInterrupt:
             # Close the client socket when user interrupts the program
